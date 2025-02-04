@@ -16,6 +16,9 @@ Existem diversas opções do compilador do TypeScript.
 
 Algumas vão influenciar no código gerado e outras nas indicações de erros pelo TS.
 
+[Demais configurações](https://www.typescriptlang.org/tsconfig/)
+
+
 ## compileOnSave
 
 Compila o arquivo ao salvar, por padrão é true.
@@ -70,6 +73,10 @@ Comentários feitos no arquivo TS não serão compilados para o arquivo JS.
 
 Inclui diversas configurações diferentes e iremos abordá-las abaixo. Portanto, **se strict for true, todas as configurações
 abaixo, também serão true.**
+
+### isolatedModules
+
+Garante que não teremos variáveis globais. Precisa ter import/export (ter um módulo).
 
 #### noImplicitAny
 
@@ -152,7 +159,6 @@ Não deixa a gente declarar um parâmetro ou variável e não utilizar, por exem
 **O não uso dessas variáveis não é um erro, é só um highlight que ele deixa no código.**
 
 
-[Demais configurações](https://www.typescriptlang.org/tsconfig/)
 
 ###
 
@@ -177,3 +183,89 @@ uma pasta, para que possamos subir depois no site.
 
 ![img_12.png](img_12.png)
 
+
+# Como o TS lida com o type-module?
+
+Se usarmos o import/export em qualquer momento em um arquivo .ts, o TypeScript irá tratar o mesmo como o module. 
+
+Consequentemente, o seu escopo não será mais global.
+
+Ou seja: usamos import/export, o TS entende que será criado um arquivo JS (que será utilizado como módulo) a partir do
+arquivo TS.
+
+**Se não tiver import/export, o arquivo TS será tratado como um arquivo global.**
+
+Vamos para a prática:
+
+Imagine que criamos um script chamado ``pluginSlide.ts`` que terá uma função:
+
+```ts
+// pluginSlide.ts
+function pluginSlide(seletor: string) {
+  console.log(`Criar slide: ${seletor}`);
+}
+```
+
+Se quiséssemos utilizar essa função dentro do ``script.ts``, poderíamos fazer de duas formas:
+
+## Primeira
+
+Carregar o outro script no HTML (antes do script principal):
+
+```html
+<body>
+  <script src="./dist/global.js"></script>
+  <script type="module" src="./dist/script.js"></script>
+</body>
+```
+
+Ou, podemos importar!
+
+## Segunda
+
+Passamos o export no plugin:
+
+```ts
+// pluginSlide.ts
+function pluginSlide(seletor: string) {
+  console.log(`Criar slide: ${seletor}`);
+}
+
+export default pluginSlide;
+```
+
+E no arquivo main, importamos ele:
+
+```ts
+//script.ts
+
+import pluginSlide from './pluginSlide.js';
+```
+
+
+
+## Resumo
+
+Apareceu import/export no TS, ele vira type-module.
+
+Se é type-module, variáveis não ficam mais acessíveis/no escopo global, teríamos também que exportá-las.
+
+```ts
+// script.ts
+
+const URL_BASE = 'http://api.origamid.dev/json' //errado, não será possível acessar em outro arquivo
+
+export const URL_BASE1 = 'http://api.origamid.dev/json' //correto
+```
+
+```ts
+// pluginSlide.ts
+
+import {URL_BASE} from './script.js';
+```
+
+Com os imports feitos, PRECISAMOS passar no HTML que o script.js será ``type=module``.
+
+Para que a gente não fique criando arquivo globais, podemos usar no ``tsconfig`` a propriedade [isolatedModules](#isolatedmodules).
+
+Ela irá nos obrigar importar/exportar as coisas!
