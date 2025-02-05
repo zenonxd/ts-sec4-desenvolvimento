@@ -159,9 +159,6 @@ Não deixa a gente declarar um parâmetro ou variável e não utilizar, por exem
 **O não uso dessas variáveis não é um erro, é só um highlight que ele deixa no código.**
 
 
-
-###
-
 ## include
 
 Isso já é fora do compilador.
@@ -182,7 +179,6 @@ A última propriedade interessante utilizar é "outDir". Nela, podemos alocar os
 uma pasta, para que possamos subir depois no site.
 
 ![img_12.png](img_12.png)
-
 
 # Como o TS lida com o type-module?
 
@@ -269,3 +265,181 @@ Com os imports feitos, PRECISAMOS passar no HTML que o script.js será ``type=mo
 Para que a gente não fique criando arquivo globais, podemos usar no ``tsconfig`` a propriedade [isolatedModules](#isolatedmodules).
 
 Ela irá nos obrigar importar/exportar as coisas!
+
+# Declaration files
+
+Podemos criar arquivos **focados apenas na declaração de tipos e interfaces**, estes devem ser terminados em ``.d.ts``.
+
+Como ele é focado só nisso, o TypeScript não irá compilar eles, mas os tipos declarados poderão ser utilizados globalmente
+na aplicação.
+
+Esse tipo de declaração é comum em bibliotecas criadas em JavaScript que desejam dar suporte ao uso da mesma em TypeScript.
+
+Vejamos o exemplo abaixo:
+
+```ts
+// arquivo para alocar a interface: global.d.ts
+interface Produto {
+  nome: string;
+}
+
+// utilizando a interface do arquivo global em script.ts
+const livro: Produto = {
+    nome: 'O Senhor dos Anéis',
+};
+```
+
+Um adendo: crie uma pasta específica para arquivos do tipo ``.d.ts``, pois o TS ignora arquivos que possuem o mesmo nome
+e diretório (ele irá priorizar o arquivo que terminar em ``.ts``).
+
+Para gerar arquivos ``.d.ts`` automaticamente, coloque ``declaration: true`` dentro de [compilerOptions](#compileroptions)
+
+## Não precisa necessariamente criar um arquivo
+
+Não é necessário criar um arquivo global ou ``.d.ts`` para ter um tipo global. É possível declarar também dentro de um
+arquivo do tipo module, usando o ``declare global {}``, veja:
+
+```ts
+declare global {
+  interface Produto {
+    nome: string;
+    preco: number;
+  }
+  
+  //poderia ter outras interfaces ou types
+}
+
+//precisa ter o export para se tornar um arquivo module
+export const livro: Produto = {
+    nome: 'O Senhor dos Anéis',
+    preco: 200,
+};
+```
+
+Com isso acima, poderíamos criar outro arquivo ``.ts`` e utilizar da interface Produto:
+
+```ts
+//arquivo .ts qualquer
+
+const livro: Livro = {
+    nome: 'Outro livro', 
+    preco: 400,
+};
+```
+
+## Problema com tipo global (overwriting)
+
+Declaração global de types tem o mesmo problema que temos em variáveis globais: outras pessoas podem escrever por cima
+delas.
+
+Então se, por exemplo, temos um arquivo ``global.d.ts`` com uma interface:
+
+```ts
+//global.d.ts
+interface Produto {
+    nome: string;
+    preco: number;
+    cor: string;
+}
+```
+
+E daí vamos para o ``script.ts``, e escrevemos a mesma interface s**em a propriedade cor e o preço como string**:
+
+```ts
+//script.ts
+
+interface Produto {
+    nome: string;
+    preco: string;
+}
+```
+
+**Ele irá ignorar a interface do arquivo global e basicamente, criar uma outra interface para Produto.**
+
+# Bibliotecas externas
+
+Ao usarmos uma biblioteca externa criada em JavaScript, o TS não consegue identificar automaticamente a interface da mesma.
+
+Para isso, milhares de projetos fornecem para instalação seus arquivos ``.d.ts``, assim, o TS passa a reconhecer a interface
+da mesma.
+
+Ou, podemos utilizar o projeto [Definitely Typed](https://github.com/DefinitelyTyped/DefinitelyTyped). Ele irá basicamente
+pegar uma biblioteca em JS e transformá-la para TS (arquivo ``.d.ts``).
+
+Para instalar, é só rodar um npm, exemplo: ``@types/nome-da-biblioteca``
+
+Exemplo para o Lodash:
+
+```bash
+npm install --save-dev @types/lodash
+```
+
+Lembrar de no HTML, importar o plug-in:
+
+```html
+<!-- index.html -->
+<script src="./plugins/jquery-3.6.1.min.js"></script>
+<script src="./plugins/lodash.min.js"></script>
+<script type="module" src="./dist/script.js"></script>
+```
+
+## Exemplos de bibliotecas suportadas
+
+Algumas das bibliotecas populares que têm tipos no DefinitelyTyped:
+
+- @types/react → Tipos para React
+- @types/express → Tipos para Express.js
+- @types/node → Tipos para APIs do Node.js
+- @types/jquery → Tipos para jQuery
+
+## E se não existir um tipo para a biblioteca?
+
+Imagine que você usa uma biblioteca externa na sua empresa e você está migrando para TS e não temos a definição de tipo
+dela e ninguém nem mesmo criou uma?
+
+Bom, a própria biblioteca nos auxilia a isso em sua documentação, vejamos o exemplo do VIMEO:
+
+1. Adicionaríamos ele no HTML, colocando uma ID:
+
+```html
+<iframe id="vimeo" src="https://player.vimeo.com/video/76979871?h=8272103f6e" width="640" height="360" frameborder="0" allowfullscreen allow="autoplay; encrypted-media"></iframe>
+```
+
+2. Selecionamos a ID no TS e instanciamos um Player, alocando o que pegamos com ID:
+
+```ts
+const iframe = document.getElementById('vimeo');
+const player = new Vimeo.Player(iframe);
+```
+
+Entretanto, para que isso funcione corretamente precisamos declarar o Vimeo para que o TS reconheça, basta fazer um
+"declare":
+
+```ts
+declare const Vimeo: any;
+const iframe = document.getElementById('vimeo');
+const player = new Vimeo.Player(iframe);
+```
+
+# Ferramentas Front
+
+## Vite
+
+É uma ferramenta desenvolvida para automação do Front End. Com ela podemos gerar bundles, iniciar um live server,
+otimizar código para produção e mais.
+
+```bash
+npm create vite@latest .
+
+// vanilla / typescript
+```
+
+Depois, seleciona o tipo de framework, se for vanilla escolha entre JS e TS, depois siga os passos abaixo ⬇️
+
+```bash
+//dentro da pasta
+
+npm install
+npm run dev
+npm run build
+```
